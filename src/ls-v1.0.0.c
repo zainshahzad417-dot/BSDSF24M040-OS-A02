@@ -229,6 +229,15 @@ static void print_columns(char **names, size_t count, int horizontal)
     }
 }
 
+/* Compare two filenames for alphabetical sorting. */
+static int compare_names(const void *left, const void *right)
+{
+    const char *first = *(char *const *)left;
+    const char *second = *(char *const *)right;
+
+    return strcmp(first, second);
+}
+
 /* Collect directory entries, display them, then free memory. */
 static void do_ls(const char *directory, int long_format,int horizontal)
 {
@@ -306,11 +315,14 @@ static void do_ls(const char *directory, int long_format,int horizontal)
     }
 
     if (!failed) {
+        if (count > 1)
+            qsort(names, count, sizeof(*names), compare_names);
+
         if (long_format) {
             for (size_t i = 0; i < count; i++)
                 long_entry(directory, names[i]);
         } else {
-            print_columns(names, count,horizontal);
+            print_columns(names, count, horizontal);
         }
     }
 
@@ -319,7 +331,6 @@ static void do_ls(const char *directory, int long_format,int horizontal)
 
     free(names);
 }
-
 
 
 

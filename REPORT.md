@@ -123,3 +123,33 @@ Changing the layout does not require another filename array.
 - Last-option precedence for -lx and -xl: passed.
 
 
+## Version v1.4.0: Alphabetical Sorting
+
+### Implemented Feature
+All directory listings now sort filenames before displaying them.
+Sorting applies to default columns, horizontal display with -x,
+and long listing with -l.
+
+### Implementation Explanation
+qsort() sorts the dynamic array of filename pointers.
+The compare_names() callback receives pointers to array elements.
+It dereferences them to obtain the filenames.
+strcmp() compares the two filenames.
+
+A negative result places the first filename before the second.
+Zero means the filenames compare equally.
+A positive result places the first filename after the second.
+
+Sorting occurs after collecting directory entries and before
+selecting the display mode. Each directory is sorted separately.
+
+### Sorting Behavior
+Comparison is case-sensitive and follows strcmp() byte ordering.
+It does not use locale-aware dictionary ordering.
+The C standard does not prescribe qsort()'s internal algorithm.
+### Test Results
+- Compilation with -Wall and -Wextra: passed without warnings.
+- Default listing of test files: sorted correctly.
+- Horizontal listing of test files: sorted correctly.
+- Long listing of test files: sorted correctly.
+- Larger-directory listings: passed.
