@@ -6,7 +6,7 @@ Roll number:BSDSF24M040
 Github username:zainshahzad417-dot
 
 ##Current Version
-Current Version: v1.2.0
+Current Version: v1.3.0.
 
 
 ##Description
@@ -47,3 +47,12 @@ Another directory: ./bin/ls -l /etc
 Multiple directories: ./bin/ls -l /etc /tmp
 - Default down-then-across column display.
 - Automatic terminal-width detection with an 80-column fallback.
+
+
+- Horizontal display with -x.
+- The last -l or -x option selects the display mode.
+
+Horizontal listing: ./bin/ls -x
+Horizontal listing of another directory: ./bin/ls -x /etc
+
+

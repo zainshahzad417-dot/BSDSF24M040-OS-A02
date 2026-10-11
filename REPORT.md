@@ -84,3 +84,42 @@ Alphabetical sorting has not yet been added.
 - Existing -l output: passed.
 - Empty-directory handling: passed.
 - Invalid-directory error and failure exit status: passed.
+
+## Version v1.3.0: Horizontal Display
+
+### Implemented Feature
+Added the -x option to display filenames from left to right
+across each row before continuing on the next row.
+
+### Implementation Explanation
+getopt() accepts both -l and -x.
+The last display option selects the output mode.
+
+The same dynamic filename array and terminal-width detection
+are used for both column layouts.
+
+Default vertical layout:
+index = row + column * rows
+
+Horizontal layout:
+index = row * columns + column
+
+The longest filename determines column width.
+Two spaces separate adjacent columns.
+Allocated filenames and the array are freed after listing.
+
+### Complexity
+Both display layouts take linear time in the number of entries
+and the total filename length.
+Changing the layout does not require another filename array.
+
+### Test Results
+- Compilation with -Wall and -Wextra: passed without warnings.
+- Default vertical display: passed.
+- Horizontal display with -x: passed.
+- Existing long listing with -l: passed.
+- Narrow-terminal layouts: passed.
+- Multiple-directory headings: passed.
+- Last-option precedence for -lx and -xl: passed.
+
+

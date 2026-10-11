@@ -158,7 +158,9 @@ static size_t terminal_width(void)
 }
 
 /* Print filenames down each column, then across. */
-static void print_columns(char **names, size_t count)
+
+/* Display vertical columns or horizontal rows. */
+static void print_columns(char **names, size_t count, int horizontal)
 {
     if (count == 0)
         return;
@@ -172,7 +174,6 @@ static void print_columns(char **names, size_t count)
             longest = length;
     }
 
-    /* Leave two spaces between columns. */
     size_t cell_width = longest + 2;
     size_t columns = (terminal_width() + 2) / cell_width;
 
@@ -182,29 +183,41 @@ static void print_columns(char **names, size_t count)
     if (columns > count)
         columns = count;
 
-    /* Ceiling division without adding count + columns. */
     size_t rows = count / columns;
 
     if (count % columns != 0)
         rows++;
 
-    /* Remove any completely empty trailing columns. */
-    columns = count / rows;
+    /* Vertical mode can remove completely empty columns. */
+    if (!horizontal) {
+        columns = count / rows;
 
-    if (count % rows != 0)
-        columns++;
+        if (count % rows != 0)
+            columns++;
+    }
 
     for (size_t row = 0; row < rows; row++) {
         for (size_t column = 0; column < columns; column++) {
-            size_t index = row + column * rows;
+            size_t index;
+
+            if (horizontal)
+                index = row * columns + column;
+            else
+                index = row + column * rows;
 
             if (index >= count)
                 break;
 
             fputs(names[index], stdout);
 
-            /* Add padding only when another entry follows. */
-            if (column + 1 < columns && index + rows < count) {
+            size_t next_index;
+
+            if (horizontal)
+                next_index = index + 1;
+            else
+                next_index = index + rows;
+
+            if (column + 1 < columns && next_index < count) {
                 size_t padding = cell_width - strlen(names[index]);
 
                 for (size_t space = 0; space < padding; space++)
@@ -217,7 +230,7 @@ static void print_columns(char **names, size_t count)
 }
 
 /* Collect directory entries, display them, then free memory. */
-static void do_ls(const char *directory, int long_format)
+static void do_ls(const char *directory, int long_format,int horizontal)
 {
     DIR *dp = opendir(directory);
 
@@ -297,7 +310,7 @@ static void do_ls(const char *directory, int long_format)
             for (size_t i = 0; i < count; i++)
                 long_entry(directory, names[i]);
         } else {
-            print_columns(names, count);
+            print_columns(names, count,horizontal);
         }
     }
 
@@ -306,29 +319,40 @@ static void do_ls(const char *directory, int long_format)
 
     free(names);
 }
+
+
+
+
 int main(int argc, char *argv[])
 {
     int long_format = 0;
+    int horizontal = 0;
     int option;
 
-    while ((option = getopt(argc, argv, "l")) != -1) {
-        if (option == 'l')
+    while ((option = getopt(argc, argv, "lx")) != -1) {
+        if (option == 'l') {
             long_format = 1;
-        else {
-            fprintf(stderr, "Usage: %s [-l] [directory ...]\n",
+            horizontal = 0;
+        } else if (option == 'x') {
+            horizontal = 1;
+            long_format = 0;
+        } else {
+            fprintf(stderr,
+                    "Usage: %s [-l] [-x] [directory ...]\n",
                     argv[0]);
+
             return EXIT_FAILURE;
         }
     }
 
     if (optind == argc) {
-        do_ls(".", long_format);
+        do_ls(".", long_format, horizontal);
     } else {
         for (int i = optind; i < argc; i++) {
             if (argc - optind > 1)
                 printf("%s:\n", argv[i]);
 
-            do_ls(argv[i], long_format);
+            do_ls(argv[i], long_format, horizontal);
 
             if (i + 1 < argc)
                 putchar('\n');
@@ -337,3 +361,4 @@ int main(int argc, char *argv[])
 
     return had_error ? EXIT_FAILURE : EXIT_SUCCESS;
 }
+
