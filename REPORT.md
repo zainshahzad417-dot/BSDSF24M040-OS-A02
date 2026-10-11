@@ -36,5 +36,12 @@ Long listing , column display , horizontal display, alphabetical sorting , color
 
 Add the mandatory video viewing notes and exact teacher report question
 
+##Test results
+- Compilation with -Wall and -Wextra: passed without warnings.
+- Basic listing: passed.
+- Long listing of the project directory: passed.
+- Long listing of /etc: passed.
+- Multiple-directory listing: passed.
+- File permissions and symbolic-link output: matched Ubuntu ls.
 
 
