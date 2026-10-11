@@ -153,3 +153,42 @@ The C standard does not prescribe qsort()'s internal algorithm.
 - Horizontal listing of test files: sorted correctly.
 - Long listing of test files: sorted correctly.
 - Larger-directory listings: passed.
+
+
+## Version v1.5.0: Colorized Output
+
+### Implemented Feature
+Filenames are colorized by file type in all display modes.
+
+Directories: blue.
+Executable regular files: green.
+Archives ending in .tar, .gz, or .zip: red.
+Symbolic links: pink.
+Devices, sockets, and FIFOs: reverse video.
+
+### Implementation Explanation
+lstat() identifies file types without following symbolic links.
+S_ISDIR(), S_ISLNK(), S_ISREG(), and the special-file macros
+classify entries.
+
+Bitwise AND checks executable permission bits.
+Filename suffix comparison identifies archive extensions.
+Archive color takes priority over executable color.
+
+ANSI escape sequences select colors and reverse video.
+The reset sequence restores normal terminal formatting.
+
+isatty() enables colors only for terminal output.
+Piped and redirected output remains plain text.
+Column padding uses filename lengths without color sequences.
+Sorting continues to compare plain filenames.
+
+### Test Results
+- Compilation with -Wall and -Wextra: passed without warnings.
+- Directory, executable, archive, and symbolic-link colors: passed.
+- FIFO reverse-video formatting: passed.
+- Colors in default, horizontal, and long layouts: passed.
+- Alphabetical ordering and column alignment: preserved.
+- Piped output: plain text.
+
+

@@ -6,7 +6,7 @@ Roll number:BSDSF24M040
 Github username:zainshahzad417-dot
 
 ##Current Version
-Current Version: v1.4.0.
+Current Version: v1.5.0.
 
 
 ##Description
@@ -60,3 +60,6 @@ Horizontal listing of another directory: ./bin/ls -x /etc
 - Case-sensitive filename comparison using strcmp().
 
 
+- File-type colors in all display modes.
+- Colors enabled for terminal output.
+- Plain text for piped or redirected output.

@@ -90,6 +90,80 @@ static void link_target(const char *path)
 }
 
 /* Print metadata for one directory entry. */
+/* Check whether a filename ends with a given extension. */
+static int has_extension(const char *name, const char *extension)
+{
+    size_t name_length = strlen(name);
+    size_t extension_length = strlen(extension);
+
+    return name_length >= extension_length &&
+           strcmp(name + name_length - extension_length,
+                  extension) == 0;
+}
+
+/* Color the filename only when output goes to a terminal. */
+static void print_colored_name(const char *name, mode_t mode)
+{
+    const char *color = "";
+
+    if (isatty(STDOUT_FILENO)) {
+        if (S_ISLNK(mode)) {
+            color = "\033[95m";
+        } else if (S_ISDIR(mode)) {
+            color = "\033[34m";
+        } else if (S_ISCHR(mode) || S_ISBLK(mode) ||
+                   S_ISFIFO(mode) || S_ISSOCK(mode)) {
+            color = "\033[7m";
+        } else if (S_ISREG(mode)) {
+            if (has_extension(name, ".tar") ||
+                has_extension(name, ".gz") ||
+                has_extension(name, ".zip")) {
+                color = "\033[31m";
+            } else if (mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
+                color = "\033[32m";
+            }
+        }
+    }
+
+    fputs(color, stdout);
+    fputs(name, stdout);
+
+    if (color[0] != '\0')
+        fputs("\033[0m", stdout);
+}
+
+/* Get metadata for filenames printed in column layouts. */
+static void print_name(const char *directory, const char *name)
+{
+    if (!isatty(STDOUT_FILENO)) {
+        fputs(name, stdout);
+        return;
+    }
+
+    size_t length = strlen(directory) + strlen(name) + 2;
+    char *path = malloc(length);
+
+    if (path == NULL) {
+        perror("malloc");
+        had_error = 1;
+        fputs(name, stdout);
+        return;
+    }
+
+    snprintf(path, length, "%s/%s", directory, name);
+
+    struct stat info;
+
+    if (lstat(path, &info) == -1) {
+        perror(path);
+        had_error = 1;
+        fputs(name, stdout);
+    } else {
+        print_colored_name(name, info.st_mode);
+    }
+
+    free(path);
+}
 static void long_entry(const char *directory, const char *name)
 {
     size_t length = strlen(directory) + strlen(name) + 2;
@@ -127,14 +201,15 @@ static void long_entry(const char *directory, const char *name)
     if (modified != NULL)
         snprintf(date, sizeof(date), "%.12s", modified + 4);
 
-    printf("%s %3ju %-12s %-12s %10jd %s %s",
+    printf("%s %3ju %-12s %-12s %10jd %s ",
            mode,
            (uintmax_t)info.st_nlink,
            owner != NULL ? owner->pw_name : uid,
            group != NULL ? group->gr_name : gid,
            (intmax_t)info.st_size,
-           date,
-           name);
+           date);
+
+    print_colored_name(name, info.st_mode);
 
     if (S_ISLNK(info.st_mode))
         link_target(path);
@@ -160,7 +235,7 @@ static size_t terminal_width(void)
 /* Print filenames down each column, then across. */
 
 /* Display vertical columns or horizontal rows. */
-static void print_columns(char **names, size_t count, int horizontal)
+static void print_columns(const char *directory, char **names,size_t count, int horizontal)
 {
     if (count == 0)
         return;
@@ -208,8 +283,7 @@ static void print_columns(char **names, size_t count, int horizontal)
             if (index >= count)
                 break;
 
-            fputs(names[index], stdout);
-
+print_name(directory, names[index]);
             size_t next_index;
 
             if (horizontal)
@@ -322,7 +396,7 @@ static void do_ls(const char *directory, int long_format,int horizontal)
             for (size_t i = 0; i < count; i++)
                 long_entry(directory, names[i]);
         } else {
-            print_columns(names, count, horizontal);
+            print_columns(directory, names, count, horizontal);
         }
     }
 
