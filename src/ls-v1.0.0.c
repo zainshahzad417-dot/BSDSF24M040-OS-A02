@@ -312,8 +312,16 @@ static int compare_names(const void *left, const void *right)
     return strcmp(first, second);
 }
 
+
+
+
+
+
 /* Collect directory entries, display them, then free memory. */
-static void do_ls(const char *directory, int long_format,int horizontal)
+
+/* List a directory and optionally visit its subdirectories. */
+static void do_ls(const char *directory, int long_format,
+                  int horizontal, int recursive)
 {
     DIR *dp = opendir(directory);
 
@@ -342,6 +350,7 @@ static void do_ls(const char *directory, int long_format,int horizontal)
             break;
         }
 
+        /* Skip hidden entries, including "." and "..". */
         if (entry->d_name[0] == '.')
             continue;
 
@@ -398,6 +407,42 @@ static void do_ls(const char *directory, int long_format,int horizontal)
         } else {
             print_columns(directory, names, count, horizontal);
         }
+
+        if (recursive) {
+            for (size_t i = 0; i < count; i++) {
+                size_t length =
+                    strlen(directory) + strlen(names[i]) + 2;
+
+                char *path = malloc(length);
+
+                if (path == NULL) {
+                    perror("malloc");
+                    had_error = 1;
+                    continue;
+                }
+
+                snprintf(path, length, "%s/%s",
+                         directory, names[i]);
+
+                struct stat info;
+
+                if (lstat(path, &info) == -1) {
+                    perror(path);
+                    had_error = 1;
+                    free(path);
+                    continue;
+                }
+
+                /* lstat() keeps directory links from being followed. */
+                if (S_ISDIR(info.st_mode)) {
+                    printf("\n%s:\n", path);
+
+                    do_ls(path, long_format, horizontal, recursive);
+                }
+
+                free(path);
+            }
+        }
     }
 
     for (size_t i = 0; i < count; i++)
@@ -407,23 +452,25 @@ static void do_ls(const char *directory, int long_format,int horizontal)
 }
 
 
-
 int main(int argc, char *argv[])
 {
     int long_format = 0;
     int horizontal = 0;
+    int recursive = 0;
     int option;
 
-    while ((option = getopt(argc, argv, "lx")) != -1) {
+    while ((option = getopt(argc, argv, "lxR")) != -1) {
         if (option == 'l') {
             long_format = 1;
             horizontal = 0;
         } else if (option == 'x') {
             horizontal = 1;
             long_format = 0;
+        } else if (option == 'R') {
+            recursive = 1;
         } else {
             fprintf(stderr,
-                    "Usage: %s [-l] [-x] [directory ...]\n",
+                    "Usage: %s [-l] [-x] [-R] [directory ...]\n",
                     argv[0]);
 
             return EXIT_FAILURE;
@@ -431,13 +478,16 @@ int main(int argc, char *argv[])
     }
 
     if (optind == argc) {
-        do_ls(".", long_format, horizontal);
+        if (recursive)
+            printf(".:\n");
+
+        do_ls(".", long_format, horizontal, recursive);
     } else {
         for (int i = optind; i < argc; i++) {
-            if (argc - optind > 1)
+            if (recursive || argc - optind > 1)
                 printf("%s:\n", argv[i]);
 
-            do_ls(argv[i], long_format, horizontal);
+            do_ls(argv[i], long_format, horizontal, recursive);
 
             if (i + 1 < argc)
                 putchar('\n');
@@ -446,4 +496,5 @@ int main(int argc, char *argv[])
 
     return had_error ? EXIT_FAILURE : EXIT_SUCCESS;
 }
+
 

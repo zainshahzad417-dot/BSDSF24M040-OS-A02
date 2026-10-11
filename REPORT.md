@@ -192,3 +192,47 @@ Sorting continues to compare plain filenames.
 - Piped output: plain text.
 
 
+## Version v1.6.0: Recursive Listing
+
+### Implemented Feature
+Added -R to list a directory and its visible subdirectories.
+Recursion works with default columns, -x, and -l.
+
+### Implementation Explanation
+getopt() accepts -R independently of the display options.
+The recursive flag is passed to do_ls().
+
+Each directory's filenames are collected and sorted.
+The current directory is displayed first.
+The program then visits its subdirectories in sorted order.
+
+A full child path is allocated and constructed.
+lstat() checks whether the child is a real directory.
+do_ls() calls itself for that directory.
+
+Directory headings separate recursive listings.
+Hidden entries, including "." and "..", are skipped.
+Symbolic links are displayed but are not followed recursively.
+
+Directory streams are closed before descending.
+Child-path buffers and filename arrays are freed.
+
+### Error Handling
+Directory and metadata errors are reported to standard error.
+A failed child listing does not prevent visiting other children.
+The program returns failure if any listing operation fails.
+
+### Memory Usage
+Recursive calls use stack space according to directory depth.
+Each active call retains its filename array until its children
+have been processed.
+
+
+### Test Results
+- Compilation with -Wall and -Wextra: passed without warnings.
+- Nested-directory traversal with -R: passed.
+- Long recursive listing with -lR: passed.
+- Horizontal recursive listing with -xR: passed.
+- Directory headings and sorted traversal: passed.
+- Parent-directory symbolic link: displayed without traversal.
+- Existing nonrecursive display modes: passed.
