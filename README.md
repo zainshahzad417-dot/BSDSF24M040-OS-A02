@@ -6,7 +6,7 @@ Roll number:BSDSF24M040
 Github username:zainshahzad417-dot
 
 ##Current Version
-Current Version: v1.5.0.
+Current Version: v1.6.0.
 
 
 ##Description
@@ -63,3 +63,15 @@ Horizontal listing of another directory: ./bin/ls -x /etc
 - File-type colors in all display modes.
 - Colors enabled for terminal output.
 - Plain text for piped or redirected output.
+
+
+- Recursive directory listing with -R.
+- Recursive listing combined with -l or -x.
+- Symbolic links are not followed during recursive traversal.
+
+Recursive listing: ./bin/ls -R
+Long recursive listing: ./bin/ls -lR
+Horizontal recursive listing: ./bin/ls -xR
+Another directory recursively: ./bin/ls -R /etc
+
+
