@@ -6,7 +6,7 @@ Roll number:BSDSF24M040
 Github username:zainshahzad417-dot
 
 ##Current Version
-Current Version: v1.3.0.
+Current Version: v1.4.0.
 
 
 ##Description
@@ -54,5 +54,9 @@ Multiple directories: ./bin/ls -l /etc /tmp
 
 Horizontal listing: ./bin/ls -x
 Horizontal listing of another directory: ./bin/ls -x /etc
+
+
+- Alphabetical sorting in every display mode using qsort().
+- Case-sensitive filename comparison using strcmp().
 
 
