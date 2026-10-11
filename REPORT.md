@@ -45,3 +45,42 @@ Add the mandatory video viewing notes and exact teacher report question
 - File permissions and symbolic-link output: matched Ubuntu ls.
 
 
+## Version v1.2.0: Column Display
+
+### Implemented Feature
+Default listing now displays filenames in aligned columns.
+Entries fill down each column before continuing across.
+
+### Implementation Explanation
+opendir(), readdir(), and closedir() handle directory entries.
+A dynamic array stores copies of the visible filenames.
+realloc() expands the array when more space is needed.
+strdup() copies each filename because readdir() storage may
+be overwritten by later calls.
+
+ioctl() with TIOCGWINSZ reads the terminal width.
+If terminal-width detection fails, the program uses 80 columns.
+
+The longest filename determines the column width.
+Two spaces separate adjacent columns.
+The entry index is calculated as:
+
+index = row + column * rows
+
+The -l option continues using the existing long-listing function.
+All allocated filenames and the array are freed after use.
+
+### Complexity
+Collecting and printing entries takes linear time in the
+number of entries and the total filename length.
+Memory usage grows with the number of entries and filename lengths.
+Alphabetical sorting has not yet been added.
+### Test Results
+- Compilation with -Wall and -Wextra: passed without warnings.
+- Default column display: passed.
+- Listing /etc: passed.
+- Narrow-terminal layout: passed.
+- Multiple-directory headings: passed.
+- Existing -l output: passed.
+- Empty-directory handling: passed.
+- Invalid-directory error and failure exit status: passed.

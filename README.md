@@ -6,7 +6,7 @@ Roll number:BSDSF24M040
 Github username:zainshahzad417-dot
 
 ##Current Version
-v1.0.0
+Current Version: v1.2.0
 
 
 ##Description
@@ -45,3 +45,5 @@ Basic listing: ./bin/ls
 Long listing: ./bin/ls -l
 Another directory: ./bin/ls -l /etc
 Multiple directories: ./bin/ls -l /etc /tmp
+- Default down-then-across column display.
+- Automatic terminal-width detection with an 80-column fallback.

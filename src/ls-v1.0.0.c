@@ -6,7 +6,7 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
-
+#include <sys/ioctl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -144,14 +144,93 @@ static void long_entry(const char *directory, const char *name)
 }
 
 /* Read a directory and skip hidden entries. */
+/* Read the terminal width; use 80 if detection fails. */
+static size_t terminal_width(void)
+{
+    struct winsize window = {0};
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &window) == 0 &&
+        window.ws_col > 0) {
+        return window.ws_col;
+    }
+
+    return 80;
+}
+
+/* Print filenames down each column, then across. */
+static void print_columns(char **names, size_t count)
+{
+    if (count == 0)
+        return;
+
+    size_t longest = 0;
+
+    for (size_t i = 0; i < count; i++) {
+        size_t length = strlen(names[i]);
+
+        if (length > longest)
+            longest = length;
+    }
+
+    /* Leave two spaces between columns. */
+    size_t cell_width = longest + 2;
+    size_t columns = (terminal_width() + 2) / cell_width;
+
+    if (columns == 0)
+        columns = 1;
+
+    if (columns > count)
+        columns = count;
+
+    /* Ceiling division without adding count + columns. */
+    size_t rows = count / columns;
+
+    if (count % columns != 0)
+        rows++;
+
+    /* Remove any completely empty trailing columns. */
+    columns = count / rows;
+
+    if (count % rows != 0)
+        columns++;
+
+    for (size_t row = 0; row < rows; row++) {
+        for (size_t column = 0; column < columns; column++) {
+            size_t index = row + column * rows;
+
+            if (index >= count)
+                break;
+
+            fputs(names[index], stdout);
+
+            /* Add padding only when another entry follows. */
+            if (column + 1 < columns && index + rows < count) {
+                size_t padding = cell_width - strlen(names[index]);
+
+                for (size_t space = 0; space < padding; space++)
+                    putchar(' ');
+            }
+        }
+
+        putchar('\n');
+    }
+}
+
+/* Collect directory entries, display them, then free memory. */
 static void do_ls(const char *directory, int long_format)
 {
     DIR *dp = opendir(directory);
+
     if (dp == NULL) {
         perror(directory);
         had_error = 1;
         return;
     }
+
+    char **names = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
+    int failed = 0;
 
     for (;;) {
         errno = 0;
@@ -161,25 +240,72 @@ static void do_ls(const char *directory, int long_format)
             if (errno != 0) {
                 perror("readdir");
                 had_error = 1;
+                failed = 1;
             }
+
             break;
         }
 
         if (entry->d_name[0] == '.')
             continue;
 
-        if (long_format)
-            long_entry(directory, entry->d_name);
-        else
-            printf("%s\n", entry->d_name);
+        if (count == capacity) {
+            if (capacity > SIZE_MAX / 2 / sizeof(*names)) {
+                fprintf(stderr, "Too many directory entries\n");
+                had_error = 1;
+                failed = 1;
+                break;
+            }
+
+            size_t new_capacity = capacity == 0 ? 16 : capacity * 2;
+
+            char **temporary = realloc(
+                names, new_capacity * sizeof(*names)
+            );
+
+            if (temporary == NULL) {
+                perror("realloc");
+                had_error = 1;
+                failed = 1;
+                break;
+            }
+
+            names = temporary;
+            capacity = new_capacity;
+        }
+
+        names[count] = strdup(entry->d_name);
+
+        if (names[count] == NULL) {
+            perror("strdup");
+            had_error = 1;
+            failed = 1;
+            break;
+        }
+
+        count++;
     }
 
     if (closedir(dp) == -1) {
         perror("closedir");
         had_error = 1;
+        failed = 1;
     }
-}
 
+    if (!failed) {
+        if (long_format) {
+            for (size_t i = 0; i < count; i++)
+                long_entry(directory, names[i]);
+        } else {
+            print_columns(names, count);
+        }
+    }
+
+    for (size_t i = 0; i < count; i++)
+        free(names[i]);
+
+    free(names);
+}
 int main(int argc, char *argv[])
 {
     int long_format = 0;
