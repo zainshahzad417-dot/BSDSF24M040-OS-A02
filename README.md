@@ -33,3 +33,15 @@ https://github.com/arifpucit/OS-Codes/tree/mainProgramming-Assignments/PA-02
 Original file:lsv1.0.0.c
 Copied to:src/ls-v1.0.0.c
  
+## Supported Features
+- Basic directory listing.
+- Long listing with -l.
+- Multiple directory arguments.
+- Symbolic link destinations in long listings.
+
+## Usage
+Build: make
+Basic listing: ./bin/ls
+Long listing: ./bin/ls -l
+Another directory: ./bin/ls -l /etc
+Multiple directories: ./bin/ls -l /etc /tmp
